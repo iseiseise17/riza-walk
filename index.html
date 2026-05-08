@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RIZA WALK</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: white;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+    }
+
+    .mode-buttons,
+    .control-buttons,
+    .set-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mode-buttons {
+      margin-bottom: 40px;
+    }
+
+    .control-buttons {
+      margin-top: 40px;
+    }
+
+    .set-buttons {
+      margin-top: 28px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 16px 24px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn {
+      background: #2f9e44;
+    }
+
+    .control-btn {
+      background: #1971c2;
+    }
+
+    .set-btn {
+      background: transparent;
+      color: #1971c2;
+      font-size: 28px;
+      padding: 8px 12px;
+    }
+
+    .timer {
+      font-size: 96px;
+      font-weight: bold;
+      color: #1971c2;
+      letter-spacing: 2px;
+    }
+
+    /* 起動中モード */
+    .active-mode {
+      transform: scale(0.92);
+      opacity: 0.85;
+    }
+
+    /* 選択中セット数 */
+    .active-set {
+      transform: scale(0.82);
+      opacity: 0.7;
+    }
+
+    /* 押した感 */
+    button:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- FAST / REST -->
+    <div class="mode-buttons">
+      <button id="fastBtn" class="mode-btn active-mode">FAST</button>
+      <button id="restBtn" class="mode-btn">REST</button>
+    </div>
+
+    <!-- TIMER -->
+    <div id="timer" class="timer">00:00</div>
+
+    <!-- START / STOP / RESET -->
+    <div class="control-buttons">
+      <button id="startBtn" class="control-btn">START</button>
+      <button id="stopBtn" class="control-btn">STOP</button>
+      <button id="resetBtn" class="control-btn">RESET</button>
+    </div>
+
+    <!-- SET COUNT -->
+    <div class="set-buttons">
+      <button class="set-btn active-set">1</button>
+      <button class="set-btn">2</button>
+      <button class="set-btn">3</button>
+      <button class="set-btn">4</button>
+      <button class="set-btn">5</button>
+      <button class="set-btn">6</button>
+      <button class="set-btn">7</button>
+    </div>
+
+    <!-- AUDIO -->
+    <audio id="fastStartAudio" src="fast_start.mp3"></audio>
+    <audio id="fast120Audio" src="fast_120.mp3"></audio>
+    <audio id="fast180Audio" src="fast.mp3"></audio>
+
+    <audio id="rest180Audio" src="rest.mp3"></audio>
+
+  </div>
+
+  <script>
+    let seconds = 0;
+    let timer = null;
+    let isRunning = false;
+
+    let currentMode = "FAST";
+
+    let fast120Played = false;
+    let fast180Played = false;
+    let rest180Played = false;
+
+    let selectedSet = 1;
+
+    const timerEl = document.getElementById("timer");
+
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    const fastBtn = document.getElementById("fastBtn");
+    const restBtn = document.getElementById("restBtn");
+
+    const setButtons = document.querySelectorAll(".set-btn");
+
+    const fastStartAudio = document.getElementById("fastStartAudio");
+    const fast120Audio = document.getElementById("fast120Audio");
+    const fast180Audio = document.getElementById("fast180Audio");
+
+    const rest180Audio = document.getElementById("rest180Audio");
+
+    function updateDisplay() {
+      const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const secs = String(seconds % 60).padStart(2, "0");
+
+      timerEl.textContent = `${mins}:${secs}`;
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+
+      isRunning = true;
+
+      if (currentMode === "FAST" && seconds === 0) {
+        fastStartAudio.play();
+      }
+
+      timer = setInterval(() => {
+
+        seconds++;
+
+        updateDisplay();
+
+        // FAST 2分
+        if (
+          currentMode === "FAST" &&
+          seconds >= 120 &&
+          !fast120Played
+        ) {
+          fast120Audio.play();
+          fast120Played = true;
+        }
+
+        // FAST 3分
+        if (
+          currentMode === "FAST" &&
+          seconds >= 180 &&
+          !fast180Played
+        ) {
+          fast180Audio.play();
+          fast180Played = true;
+        }
+
+        // REST 3分
+        if (
+          currentMode === "REST" &&
+          seconds >= 180 &&
+          !rest180Played
+        ) {
+          rest180Audio.play();
+          rest180Played = true;
+        }
+
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timer);
+      isRunning = false;
+    }
+
+    function resetTimer() {
+      stopTimer();
+
+      seconds = 0;
+
+      fast120Played = false;
+      fast180Played = false;
+      rest180Played = false;
+
+      updateDisplay();
+    }
+
+    function setMode(mode) {
+
+      currentMode = mode;
+
+      resetTimer();
+
+      fastBtn.classList.remove("active-mode");
+      restBtn.classList.remove("active-mode");
+
+      if (mode === "FAST") {
+        fastBtn.classList.add("active-mode");
+      } else {
+        restBtn.classList.add("active-mode");
+      }
+    }
+
+    // セット数選択
+    setButtons.forEach((button) => {
+
+      button.addEventListener("click", () => {
+
+        setButtons.forEach(btn => {
+          btn.classList.remove("active-set");
+        });
+
+        button.classList.add("active-set");
+
+        selectedSet = button.textContent;
+      });
+
+    });
+
+    startBtn.addEventListener("click", startTimer);
+
+    stopBtn.addEventListener("click", stopTimer);
+
+    resetBtn.addEventListener("click", resetTimer);
+
+    fastBtn.addEventListener("click", () => {
+      setMode("FAST");
+    });
+
+    restBtn.addEventListener("click", () => {
+      setMode("REST");
+    });
+
+    updateDisplay();
+  </script>
+
+</body>
+</html>
